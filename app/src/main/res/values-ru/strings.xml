@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- App name -->
+    <string name="app_name">ChronoTrack</string>
+    
+    <!-- Common -->
+    <string name="cancel">Отмена</string>
+    <string name="save">Сохранить</string>
+    <string name="delete">Удалить</string>
+    <string name="edit">Редактировать</string>
+    <string name="add">Добавить</string>
+    <string name="back">Назад</string>
+    <string name="close">Закрыть</string>
+    
+    <!-- Navigation -->
+    <string name="activities">Активности</string>
+    <string name="statistics">Статистика</string>
+    <string name="settings">Настройки</string>
+    <string name="comments">Комментарии</string>
+    
+    <!-- Activities Screen -->
+    <string name="add_activity">Добавить активность</string>
+    <string name="edit_activity">Редактировать активность</string>
+    <string name="delete_activity">Удалить активность</string>
+    <string name="activity_name">Название активности</string>
+    <string name="activity_color">Цвет активности</string>
+    <string name="activity_icon">Иконка активности</string>
+    <string name="in_progress">В процессе</string>
+    <string name="all_comments">Все комментарии</string>
+    <string name="add_comment">Добавить комментарий</string>
+    
+    <!-- Time Entry Details -->
+    <string name="activity_details">Детали активности</string>
+    <string name="start">Начало</string>
+    <string name="end">Окончание</string>
+    <string name="duration">Продолжительность</string>
+    <string name="duration_format">Продолжительность: %1$s</string>
+    <string name="in_progress_duration">%1$s (в процессе)</string>
+    <string name="hours_minutes_format">%1$dч %2$dмин</string>
+    <string name="delete_time_entry">Удалить период активности</string>
+    <string name="delete_time_entry_confirmation">Вы действительно хотите удалить этот период активности?</string>
+    <string name="delete_time_entry_comments_warning">Все комментарии, связанные с этим периодом, также будут удалены.</string>
+    
+    <!-- Comments -->
+    <string name="comments_count">Комментарии (%1$d)</string>
+    <string name="no_comments">Нет комментариев</string>
+    <string name="add_comment_title">Добавить комментарий</string>
+    <string name="edit_comment_title">Редактировать комментарий</string>
+    <string name="comment_text">Текст комментария</string>
+    <string name="delete_comment">Удаление комментария</string>
+    <string name="delete_comment_confirmation">Вы действительно хотите удалить этот комментарий?</string>
+    <string name="add_media">Добавить медиа</string>
+    <string name="hide_options">Скрыть опции</string>
+    <string name="select_photo_gallery">Выбрать фото из галереи</string>
+    <string name="take_photo">Сделать фото</string>
+    <string name="select_video_gallery">Выбрать видео из галереи</string>
+    <string name="record_video">Записать видео</string>
+    <string name="select_audio_gallery">Выбрать аудио из галереи</string>
+    <string name="photo_preview">Просмотр фото</string>
+    <string name="video_preview">Просмотр видео</string>
+    <string name="audio_preview">Прослушивание аудио</string>
+    <string name="tap_to_view_video">Нажмите, чтобы просмотреть видео</string>
+    <string name="tap_to_play_audio">Нажмите, чтобы прослушать аудио</string>
+    <string name="play">Воспроизвести</string>
+    <string name="stop">Остановить</string>
+    <string name="photo_selected">Фото выбрано</string>
+    <string name="video_selected">Видео выбрано</string>
+    <string name="audio_selected">Аудио выбрано</string>
+    
+    <!-- Filter -->
+    <string name="filter">Фильтр</string>
+    <string name="filter_comments">Фильтр комментариев</string>
+    <string name="activity">Активность</string>
+    <string name="date">Дата</string>
+    <string name="all_activities">Все активности</string>
+    <string name="all_dates">Все даты</string>
+    <string name="apply">Применить</string>
+    <string name="reset">Сбросить</string>
+    
+    <!-- Settings Screen -->
+    <string name="language_settings">Настройки языка</string>
+    <string name="select_language">Выберите язык</string>
+    <string name="system_language">Системный язык</string>
+    <string name="english">Английский</string>
+    <string name="russian">Русский</string>
+    <string name="language_change_restart">Приложение будет перезапущено для применения изменения языка</string>
+    <string name="language_change_error">Ошибка при смене языка. Пожалуйста, попробуйте снова.</string>
+</resources> 
