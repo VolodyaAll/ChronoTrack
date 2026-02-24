@@ -1,10 +1,9 @@
 package com.sharai.chronotrack.data.model
 
-/**
- * Класс, объединяющий комментарий с соответствующей активностью и записью времени
- */
+import androidx.room.Embedded
+
 data class CommentWithActivityAndTimeEntry(
-    val comment: Comment,
-    val timeEntry: TimeEntry,
-    val activity: Activity
-) 
+    @Embedded val comment: Comment,
+    @Embedded(prefix = "te_") val timeEntry: TimeEntry,
+    @Embedded(prefix = "a_") val activity: Activity
+)

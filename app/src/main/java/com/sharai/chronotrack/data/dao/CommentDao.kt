@@ -2,68 +2,42 @@ package com.sharai.chronotrack.data.dao
 
 import androidx.room.*
 import com.sharai.chronotrack.data.model.Comment
+import com.sharai.chronotrack.data.model.CommentWithActivityAndTimeEntry
 import kotlinx.coroutines.flow.Flow
 
-/**
- * DAO для работы с комментариями к периодам активности
- */
 @Dao
 interface CommentDao {
-    /**
-     * Получить все комментарии для указанной записи времени
-     */
+
     @Query("SELECT * FROM comments WHERE timeEntryId = :timeEntryId ORDER BY createdAt DESC")
     fun getCommentsForTimeEntry(timeEntryId: Long): Flow<List<Comment>>
-    
-    /**
-     * Получить комментарий по ID
-     */
+
     @Query("SELECT * FROM comments WHERE id = :commentId")
     suspend fun getCommentById(commentId: Long): Comment?
-    
-    /**
-     * Добавить новый комментарий
-     */
+
     @Insert
     suspend fun insertComment(comment: Comment): Long
-    
-    /**
-     * Обновить существующий комментарий
-     */
+
     @Update
     suspend fun updateComment(comment: Comment)
-    
-    /**
-     * Удалить комментарий
-     */
+
     @Delete
     suspend fun deleteComment(comment: Comment)
-    
-    /**
-     * Удалить все комментарии для указанной записи времени
-     */
+
     @Query("DELETE FROM comments WHERE timeEntryId = :timeEntryId")
     suspend fun deleteCommentsForTimeEntry(timeEntryId: Long)
-    
-    /**
-     * Получить все комментарии с информацией о связанных записях времени и активностях
-     */
+
+    @Transaction
     @Query("""
-        SELECT c.* FROM comments c
-        JOIN time_entries t ON c.timeEntryId = t.id
+        SELECT 
+            c.id, c.timeEntryId, c.text, c.mediaType, c.mediaUri, c.createdAt,
+            t.id AS te_id, t.activityId AS te_activityId, 
+            t.startTime AS te_startTime, t.endTime AS te_endTime, t.duration AS te_duration,
+            a.id AS a_id, a.name AS a_name, a.color AS a_color, 
+            a.icon AS a_icon, a.isActive AS a_isActive, a.isArchived AS a_isArchived
+        FROM comments c
+        INNER JOIN time_entries t ON c.timeEntryId = t.id
+        INNER JOIN activities a ON t.activityId = a.id
         ORDER BY c.createdAt DESC
     """)
-    fun getAllComments(): Flow<List<Comment>>
-    
-    /**
-     * Получить запись времени для комментария
-     */
-    @Query("SELECT * FROM time_entries WHERE id = :timeEntryId")
-    suspend fun getTimeEntryForComment(timeEntryId: Long): com.sharai.chronotrack.data.model.TimeEntry
-    
-    /**
-     * Получить активность для записи времени
-     */
-    @Query("SELECT * FROM activities WHERE id = :activityId")
-    suspend fun getActivityForTimeEntry(activityId: Long): com.sharai.chronotrack.data.model.Activity
-} 
+    fun getAllCommentsWithDetails(): Flow<List<CommentWithActivityAndTimeEntry>>
+}

@@ -14,70 +14,42 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
-import java.time.LocalDateTime
 
-/**
- * ViewModel для работы с комментариями к периодам активности
- */
 class CommentViewModel(private val repository: CommentRepository) : ViewModel() {
-    
+
     private val _selectedTimeEntryId = MutableStateFlow<Long?>(null)
     val selectedTimeEntryId: StateFlow<Long?> = _selectedTimeEntryId.asStateFlow()
-    
+
     private val _selectedComment = MutableStateFlow<Comment?>(null)
     val selectedComment: StateFlow<Comment?> = _selectedComment.asStateFlow()
-    
-    /**
-     * Установить текущую запись времени для работы с комментариями
-     */
+
     fun setTimeEntry(timeEntryId: Long) {
         _selectedTimeEntryId.value = timeEntryId
         _selectedComment.value = null
     }
-    
-    /**
-     * Получить комментарии для текущей записи времени
-     */
+
     fun getCommentsForCurrentTimeEntry(): Flow<List<Comment>>? {
         return _selectedTimeEntryId.value?.let { timeEntryId ->
             repository.getCommentsForTimeEntry(timeEntryId)
         }
     }
-    
-    /**
-     * Получить все комментарии с информацией об активностях и записях времени
-     */
-    fun getAllCommentsWithActivityAndTimeEntry(): Flow<List<CommentWithActivityAndTimeEntry>> {
-        return repository.getAllCommentsWithActivityAndTimeEntry()
-    }
-    
-    /**
-     * Проверить наличие комментариев у записи времени
-     */
-    fun hasComments(timeEntryId: Long): Flow<Boolean> {
-        return repository.getCommentsForTimeEntry(timeEntryId)
-            .map { comments -> comments.isNotEmpty() }
-    }
-    
-    /**
-     * Загрузить комментарий по ID
-     */
+
+    fun getAllCommentsWithActivityAndTimeEntry(): Flow<List<CommentWithActivityAndTimeEntry>> =
+        repository.getAllCommentsWithActivityAndTimeEntry()
+
+    fun hasComments(timeEntryId: Long): Flow<Boolean> =
+        repository.getCommentsForTimeEntry(timeEntryId).map { it.isNotEmpty() }
+
     fun loadComment(commentId: Long) {
         viewModelScope.launch {
             _selectedComment.value = repository.getCommentById(commentId)
         }
     }
-    
-    /**
-     * Очистить выбранный комментарий
-     */
+
     fun clearSelectedComment() {
         _selectedComment.value = null
     }
-    
-    /**
-     * Добавить текстовый комментарий
-     */
+
     fun addTextComment(text: String) {
         viewModelScope.launch {
             _selectedTimeEntryId.value?.let { timeEntryId ->
@@ -85,10 +57,7 @@ class CommentViewModel(private val repository: CommentRepository) : ViewModel() 
             }
         }
     }
-    
-    /**
-     * Добавить комментарий с фото
-     */
+
     fun addPhotoComment(text: String, photoUri: Uri) {
         viewModelScope.launch {
             _selectedTimeEntryId.value?.let { timeEntryId ->
@@ -96,10 +65,7 @@ class CommentViewModel(private val repository: CommentRepository) : ViewModel() 
             }
         }
     }
-    
-    /**
-     * Добавить комментарий с видео
-     */
+
     fun addVideoComment(text: String, videoUri: Uri) {
         viewModelScope.launch {
             _selectedTimeEntryId.value?.let { timeEntryId ->
@@ -107,10 +73,7 @@ class CommentViewModel(private val repository: CommentRepository) : ViewModel() 
             }
         }
     }
-    
-    /**
-     * Добавить комментарий с аудио
-     */
+
     fun addAudioComment(text: String, uri: Uri) {
         viewModelScope.launch {
             _selectedTimeEntryId.value?.let { timeEntryId ->
@@ -118,40 +81,27 @@ class CommentViewModel(private val repository: CommentRepository) : ViewModel() 
             }
         }
     }
-    
-    /**
-     * Обновить комментарий
-     */
+
     fun updateComment(comment: Comment) {
         viewModelScope.launch {
             repository.updateComment(comment)
         }
     }
-    
-    /**
-     * Обновить текст комментария
-     */
+
     fun updateCommentText(commentId: Long, newText: String) {
         viewModelScope.launch {
             repository.getCommentById(commentId)?.let { comment ->
-                val updatedComment = comment.copy(text = newText)
-                repository.updateComment(updatedComment)
+                repository.updateComment(comment.copy(text = newText))
             }
         }
     }
-    
-    /**
-     * Удалить комментарий
-     */
+
     fun deleteComment(comment: Comment) {
         viewModelScope.launch {
             repository.deleteComment(comment)
         }
     }
-    
-    /**
-     * Фабрика для создания ViewModel
-     */
+
     class Factory(private val repository: CommentRepository) : ViewModelProvider.Factory {
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
             if (modelClass.isAssignableFrom(CommentViewModel::class.java)) {
@@ -161,4 +111,4 @@ class CommentViewModel(private val repository: CommentRepository) : ViewModel() 
             throw IllegalArgumentException("Unknown ViewModel class")
         }
     }
-} 
+}

@@ -14,6 +14,7 @@ import java.time.Duration
 import java.time.LocalDateTime
 
 class TimeEntryViewModel(private val repository: TimeEntryRepository) : ViewModel() {
+
     private val _selectedTimeEntry = MutableStateFlow<TimeEntry?>(null)
     val selectedTimeEntry: StateFlow<TimeEntry?> = _selectedTimeEntry.asStateFlow()
 
@@ -25,30 +26,17 @@ class TimeEntryViewModel(private val repository: TimeEntryRepository) : ViewMode
     fun getTimeEntriesForPeriod(startDate: LocalDateTime, endDate: LocalDateTime): Flow<List<TimeEntry>> =
         repository.getTimeEntriesForPeriod(startDate, endDate)
 
-    /**
-     * Получает текущую запись времени
-     * @return Текущая запись времени или null, если нет активной записи
-     */
     suspend fun getCurrentTimeEntry(): TimeEntry? = repository.getCurrentTimeEntry()
 
     fun startActivity(activityId: Long) {
         viewModelScope.launch {
-            // Завершаем текущую активность, если есть
             getCurrentTimeEntry()?.let { currentEntry ->
                 val now = LocalDateTime.now()
-                val duration = Duration.between(currentEntry.startTime, now)
-                updateTimeEntry(currentEntry.copy(
-                    endTime = now,
-                    duration = duration
-                ))
+                repository.updateTimeEntry(
+                    currentEntry.copy(endTime = now, duration = Duration.between(currentEntry.startTime, now))
+                )
             }
-
-            // Создаем новую запись
-            val timeEntry = TimeEntry(
-                activityId = activityId,
-                startTime = LocalDateTime.now()
-            )
-            repository.insertTimeEntry(timeEntry)
+            repository.insertTimeEntry(TimeEntry(activityId = activityId, startTime = LocalDateTime.now()))
         }
     }
 
@@ -56,23 +44,13 @@ class TimeEntryViewModel(private val repository: TimeEntryRepository) : ViewMode
         viewModelScope.launch {
             getCurrentTimeEntry()?.let { currentEntry ->
                 val now = LocalDateTime.now()
-                val duration = Duration.between(currentEntry.startTime, now)
-                updateTimeEntry(currentEntry.copy(
-                    endTime = now,
-                    duration = duration
-                ))
+                repository.updateTimeEntry(
+                    currentEntry.copy(endTime = now, duration = Duration.between(currentEntry.startTime, now))
+                )
             }
         }
     }
 
-    private suspend fun updateTimeEntry(timeEntry: TimeEntry) {
-        repository.updateTimeEntry(timeEntry)
-    }
-
-    /**
-     * Удаляет запись времени по ID
-     * @param timeEntryId ID записи времени для удаления
-     */
     fun deleteTimeEntry(timeEntry: TimeEntry) {
         viewModelScope.launch {
             repository.deleteTimeEntry(timeEntry)
@@ -88,4 +66,4 @@ class TimeEntryViewModel(private val repository: TimeEntryRepository) : ViewMode
             throw IllegalArgumentException("Unknown ViewModel class")
         }
     }
-} 
+}

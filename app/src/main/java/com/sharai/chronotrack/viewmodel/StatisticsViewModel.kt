@@ -13,8 +13,6 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.LocalTime
 import java.time.Duration
-import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.flow.SharingStarted
 
 data class TimeEntryWithActivity(
     val timeEntry: TimeEntry,
@@ -59,17 +57,11 @@ class StatisticsViewModel(
         val activitiesMap = activities.associateBy { it.id }
         val startDateTime = range.startDate.atTime(range.startTime)
         val endDateTime = range.endDate.atTime(range.endTime)
-        
+
         entries
             .filter { entry ->
-                val entryStart = entry.startTime
                 val entryEnd = entry.endTime ?: LocalDateTime.now()
-                
-                // Показываем запись, если она:
-                // 1. Началась в выбранном промежутке
-                // 2. Закончилась в выбранном промежутке
-                // 3. Проходит через выбранный промежуток
-                (entryStart <= endDateTime && (entryEnd >= startDateTime))
+                entry.startTime <= endDateTime && entryEnd >= startDateTime
             }
             .mapNotNull { entry ->
                 activitiesMap[entry.activityId]?.let { activity ->
@@ -77,8 +69,8 @@ class StatisticsViewModel(
                 }
             }
             .groupBy { it.timeEntry.startTime.toLocalDate() }
-            .map { (date, entries) ->
-                DayStatistics(date, entries.sortedByDescending { it.timeEntry.startTime })
+            .map { (date, dayEntries) ->
+                DayStatistics(date, dayEntries.sortedByDescending { it.timeEntry.startTime })
             }
             .sortedByDescending { it.date }
     }
@@ -90,46 +82,36 @@ class StatisticsViewModel(
     ) { entries, activities, range ->
         val startDateTime = range.startDate.atTime(range.startTime)
         val endDateTime = range.endDate.atTime(range.endTime)
-        
         val now = LocalDateTime.now()
-        
-        // Группируем записи по активностям и вычисляем статистику
+
         val stats = activities.map { activity ->
             val activityEntries = entries.filter { entry ->
                 entry.activityId == activity.id &&
-                entry.startTime <= endDateTime &&
-                (entry.endTime ?: now) >= startDateTime
+                    entry.startTime <= endDateTime &&
+                    (entry.endTime ?: now) >= startDateTime
             }
-            
+
             val totalDuration = activityEntries.sumOf { entry ->
-                val entryEnd = entry.endTime ?: now
-                val entryStart = entry.startTime
-                
-                // Обрезаем время до границ выбранного периода
-                val effectiveStart = if (entryStart < startDateTime) startDateTime else entryStart
-                val effectiveEnd = if (entryEnd > endDateTime) endDateTime else entryEnd
-                
+                val effectiveStart = maxOf(entry.startTime, startDateTime)
+                val effectiveEnd = minOf(entry.endTime ?: now, endDateTime)
                 Duration.between(effectiveStart, effectiveEnd).seconds
             }
-            
+
             ActivityStatistics(
                 activity = activity,
                 totalDuration = Duration.ofSeconds(totalDuration),
                 entriesCount = activityEntries.size,
-                percentage = 0f // Временное значение
+                percentage = 0f
             )
-        }.filter { it.entriesCount > 0 } // Фильтруем активности без записей
-        
-        // Вычисляем общую длительность и проценты
+        }.filter { it.entriesCount > 0 }
+
         val totalSeconds = stats.sumOf { it.totalDuration.seconds }
-        
-        // Обновляем проценты
         stats.map { stat ->
-            if (totalSeconds > 0) {
-                stat.copy(percentage = stat.totalDuration.seconds.toFloat() / totalSeconds.toFloat() * 100f)
-            } else {
-                stat.copy(percentage = 0f)
-            }
+            stat.copy(
+                percentage = if (totalSeconds > 0)
+                    stat.totalDuration.seconds.toFloat() / totalSeconds.toFloat() * 100f
+                else 0f
+            )
         }.sortedByDescending { it.totalDuration }
     }
 
@@ -139,17 +121,12 @@ class StatisticsViewModel(
 
     fun getTimeEntriesForPeriod(startDate: LocalDate, endDate: LocalDate): Flow<List<TimeEntryWithActivity>> {
         return combine(
-            timeEntryRepository.getTimeEntriesForPeriod(
-                startDate.atStartOfDay(),
-                endDate.atTime(LocalTime.MAX)
-            ),
+            timeEntryRepository.getTimeEntriesForPeriod(startDate.atStartOfDay(), endDate.atTime(LocalTime.MAX)),
             activityRepository.allActiveActivities
         ) { entries, activities ->
             val activitiesMap = activities.associateBy { it.id }
             entries.mapNotNull { entry ->
-                activitiesMap[entry.activityId]?.let { activity ->
-                    TimeEntryWithActivity(entry, activity)
-                }
+                activitiesMap[entry.activityId]?.let { TimeEntryWithActivity(entry, it) }
             }.sortedByDescending { it.timeEntry.startTime }
         }
     }
@@ -175,4 +152,4 @@ class StatisticsViewModel(
             throw IllegalArgumentException("Unknown ViewModel class")
         }
     }
-} 
+}

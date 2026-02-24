@@ -1,6 +1,5 @@
 package com.sharai.chronotrack.ui.screens
 
-import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -9,34 +8,29 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.sharai.chronotrack.ChronoTrackApp
-import com.sharai.chronotrack.data.model.Activity
 import com.sharai.chronotrack.data.model.Comment
 import com.sharai.chronotrack.data.model.CommentWithActivityAndTimeEntry
 import com.sharai.chronotrack.data.model.MediaType
-import com.sharai.chronotrack.data.model.TimeEntry
 import com.sharai.chronotrack.ui.comments.EditCommentDialog
 import com.sharai.chronotrack.ui.comments.MediaPreviewDialog
 import com.sharai.chronotrack.ui.utils.ColorUtils
 import com.sharai.chronotrack.ui.utils.getIconByClassName
 import com.sharai.chronotrack.viewmodel.ActivityViewModel
 import com.sharai.chronotrack.viewmodel.CommentViewModel
-import com.sharai.chronotrack.viewmodel.TimeEntryViewModel
 import java.time.format.DateTimeFormatter
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -47,55 +41,47 @@ fun CommentsScreen(
 ) {
     val context = LocalContext.current
     val app = context.applicationContext as ChronoTrackApp
-    
-    // Получаем ViewModel
+
     val commentViewModel = viewModel<CommentViewModel>(
         factory = CommentViewModel.Factory(app.commentRepository)
     )
-    
-    val timeEntryViewModel = viewModel<TimeEntryViewModel>(
-        factory = TimeEntryViewModel.Factory(app.timeEntryRepository)
-    )
-    
     val activityViewModel = viewModel<ActivityViewModel>(
         factory = ActivityViewModel.Factory(app.activityRepository, app.timeEntryRepository)
     )
-    
-    // Состояние для комментариев
-    val allComments by commentViewModel.getAllCommentsWithActivityAndTimeEntry().collectAsState(initial = emptyList())
-    
-    // Состояния для диалогов
+
+    val allComments by commentViewModel.getAllCommentsWithActivityAndTimeEntry()
+        .collectAsState(initial = emptyList())
+
     var showDeleteCommentDialog by remember { mutableStateOf(false) }
     var commentToDelete by remember { mutableStateOf<Comment?>(null) }
     var commentToEdit by remember { mutableStateOf<Comment?>(null) }
     var showEditCommentDialog by remember { mutableStateOf(false) }
     var showMediaPreviewDialog by remember { mutableStateOf(false) }
     var mediaToPreview by remember { mutableStateOf<Comment?>(null) }
-    
-    // Фильтры
+
     var showFilterDialog by remember { mutableStateOf(false) }
     var selectedActivityFilter by remember { mutableStateOf<Long?>(null) }
     var selectedDateFilter by remember { mutableStateOf<String?>(null) }
-    
-    // Получаем все активности для фильтра
+
     val allActivities by activityViewModel.allActiveActivities.collectAsState(initial = emptyList())
-    
-    // Фильтруем комментарии
+
     val filteredComments = allComments.filter { commentWithData ->
         (selectedActivityFilter == null || commentWithData.activity.id == selectedActivityFilter) &&
         (selectedDateFilter == null || commentWithData.comment.createdAt.toLocalDate().toString() == selectedDateFilter)
     }
-    
-    // Получаем уникальные даты для фильтра
-    val uniqueDates = allComments.map { it.comment.createdAt.toLocalDate().toString() }.distinct().sorted()
-    
+
+    val uniqueDates = allComments
+        .map { it.comment.createdAt.toLocalDate().toString() }
+        .distinct()
+        .sorted()
+
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text("Комментарии") },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Назад")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Назад")
                     }
                 },
                 actions = {
@@ -107,7 +93,6 @@ fun CommentsScreen(
         }
     ) { paddingValues ->
         if (allComments.isEmpty()) {
-            // Показываем сообщение, если нет комментариев
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -122,7 +107,6 @@ fun CommentsScreen(
                 )
             }
         } else {
-            // Показываем список комментариев
             LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
@@ -158,8 +142,7 @@ fun CommentsScreen(
             }
         }
     }
-    
-    // Диалог фильтрации
+
     if (showFilterDialog) {
         AlertDialog(
             onDismissRequest = { showFilterDialog = false },
@@ -170,8 +153,7 @@ fun CommentsScreen(
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     Text("Активность:", style = MaterialTheme.typography.bodyLarge)
-                    
-                    // Список активностей для фильтра
+
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -192,7 +174,7 @@ fun CommentsScreen(
                             Spacer(modifier = Modifier.width(8.dp))
                             Text("Все активности")
                         }
-                        
+
                         allActivities.forEach { activity ->
                             Row(
                                 modifier = Modifier
@@ -225,12 +207,11 @@ fun CommentsScreen(
                             }
                         }
                     }
-                    
-                    Divider()
-                    
+
+                    HorizontalDivider()
+
                     Text("Дата:", style = MaterialTheme.typography.bodyLarge)
-                    
-                    // Список дат для фильтра
+
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -251,7 +232,7 @@ fun CommentsScreen(
                             Spacer(modifier = Modifier.width(8.dp))
                             Text("Все даты")
                         }
-                        
+
                         uniqueDates.forEach { date ->
                             Row(
                                 modifier = Modifier
@@ -265,9 +246,7 @@ fun CommentsScreen(
                                     onClick = { selectedDateFilter = date }
                                 )
                                 Spacer(modifier = Modifier.width(8.dp))
-                                Text(
-                                    date.split("-").reversed().joinToString(".")
-                                )
+                                Text(date.split("-").reversed().joinToString("."))
                             }
                         }
                     }
@@ -291,12 +270,11 @@ fun CommentsScreen(
             }
         )
     }
-    
-    // Диалог редактирования комментария
+
     if (showEditCommentDialog && commentToEdit != null) {
         EditCommentDialog(
             comment = commentToEdit!!,
-            onDismiss = { 
+            onDismiss = {
                 showEditCommentDialog = false
                 commentToEdit = null
             },
@@ -307,22 +285,20 @@ fun CommentsScreen(
             }
         )
     }
-    
-    // Диалог просмотра медиа
+
     if (showMediaPreviewDialog && mediaToPreview != null) {
         MediaPreviewDialog(
             comment = mediaToPreview!!,
-            onDismiss = { 
+            onDismiss = {
                 showMediaPreviewDialog = false
                 mediaToPreview = null
             }
         )
     }
-    
-    // Диалог удаления комментария
+
     if (showDeleteCommentDialog && commentToDelete != null) {
         AlertDialog(
-            onDismissRequest = { 
+            onDismissRequest = {
                 showDeleteCommentDialog = false
                 commentToDelete = null
             },
@@ -341,7 +317,7 @@ fun CommentsScreen(
             },
             dismissButton = {
                 TextButton(
-                    onClick = { 
+                    onClick = {
                         showDeleteCommentDialog = false
                         commentToDelete = null
                     }
@@ -363,10 +339,8 @@ fun CommentWithActivityItem(
 ) {
     val context = LocalContext.current
     val timeFormatter = DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm")
-    
-    // Преобразуем строку URI в объект Uri для медиа
     val mediaUri = commentWithData.comment.mediaUri?.let { android.net.Uri.parse(it) }
-    
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -379,7 +353,6 @@ fun CommentWithActivityItem(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            // Информация об активности
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -403,18 +376,18 @@ fun CommentWithActivityItem(
                         modifier = Modifier.size(20.dp)
                     )
                 }
-                
+
                 Spacer(modifier = Modifier.width(8.dp))
-                
+
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = commentWithData.activity.name,
                         style = MaterialTheme.typography.titleMedium
                     )
-                    
+
                     val startTimeFormatter = DateTimeFormatter.ofPattern("HH:mm")
                     val dateFormatter = DateTimeFormatter.ofPattern("dd.MM.yyyy")
-                    
+
                     Text(
                         text = "${commentWithData.timeEntry.startTime.format(dateFormatter)}, ${commentWithData.timeEntry.startTime.format(startTimeFormatter)}",
                         style = MaterialTheme.typography.bodySmall,
@@ -422,8 +395,7 @@ fun CommentWithActivityItem(
                     )
                 }
             }
-            
-            // Заголовок с датой и кнопкой удаления
+
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -434,7 +406,7 @@ fun CommentWithActivityItem(
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-                
+
                 IconButton(
                     onClick = onDeleteClick,
                     modifier = Modifier.size(24.dp)
@@ -446,8 +418,7 @@ fun CommentWithActivityItem(
                     )
                 }
             }
-            
-            // Текст комментария
+
             if (commentWithData.comment.text.isNotEmpty()) {
                 Text(
                     text = commentWithData.comment.text,
@@ -458,8 +429,7 @@ fun CommentWithActivityItem(
                         .padding(vertical = 4.dp)
                 )
             }
-            
-            // Медиафайл (если есть)
+
             commentWithData.comment.mediaType?.let { mediaType ->
                 when (mediaType) {
                     MediaType.PHOTO -> {
@@ -469,7 +439,7 @@ fun CommentWithActivityItem(
                                 .crossfade(true)
                                 .build(),
                             contentDescription = "Фото",
-                            contentScale = ContentScale.Crop,
+                            contentScale = androidx.compose.ui.layout.ContentScale.Crop,
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(200.dp)
@@ -527,4 +497,4 @@ fun CommentWithActivityItem(
             }
         }
     }
-} 
+}

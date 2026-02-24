@@ -12,18 +12,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.CameraAlt
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Mic
-import androidx.compose.material.icons.filled.MusicNote
-import androidx.compose.material.icons.filled.Photo
-import androidx.compose.material.icons.filled.Stop
-import androidx.compose.material.icons.filled.VideoLibrary
-import androidx.compose.material.icons.filled.Videocam
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -61,7 +51,8 @@ fun TimeEntryDetailsScreen(
     commentViewModel: CommentViewModel,
     onBack: () -> Unit
 ) {
-    val comments by commentViewModel.getCommentsForCurrentTimeEntry()?.collectAsState(initial = emptyList()) ?: remember { mutableStateOf(emptyList<Comment>()) }
+    val comments by commentViewModel.getCommentsForCurrentTimeEntry()?.collectAsState(initial = emptyList())
+        ?: remember { mutableStateOf(emptyList<Comment>()) }
     var showAddCommentDialog by remember { mutableStateOf(false) }
     var showDeleteCommentDialog by remember { mutableStateOf(false) }
     var commentToDelete by remember { mutableStateOf<Comment?>(null) }
@@ -69,15 +60,10 @@ fun TimeEntryDetailsScreen(
     var showEditCommentDialog by remember { mutableStateOf(false) }
     var showMediaPreviewDialog by remember { mutableStateOf(false) }
     var mediaToPreview by remember { mutableStateOf<Comment?>(null) }
-    
-    // Состояние для диалога удаления периода активности
     var showDeleteTimeEntryDialog by remember { mutableStateOf(false) }
-    
-    // Получаем доступ к контексту для доступа к приложению
+
     val context = LocalContext.current
     val app = context.applicationContext as com.sharai.chronotrack.ChronoTrackApp
-    
-    // Создаем TimeEntryViewModel с использованием фабрики
     val timeEntryViewModel = androidx.lifecycle.viewmodel.compose.viewModel<com.sharai.chronotrack.viewmodel.TimeEntryViewModel>(
         factory = com.sharai.chronotrack.viewmodel.TimeEntryViewModel.Factory(app.timeEntryRepository)
     )
@@ -92,11 +78,10 @@ fun TimeEntryDetailsScreen(
                 title = { Text(stringResource(R.string.activity_details)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = stringResource(R.string.back))
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back))
                     }
                 },
                 actions = {
-                    // Кнопка удаления периода активности
                     IconButton(onClick = { showDeleteTimeEntryDialog = true }) {
                         Icon(
                             imageVector = Icons.Default.Delete,
@@ -122,12 +107,10 @@ fun TimeEntryDetailsScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Информация об активности
             item {
                 ActivityInfoCard(activity, timeEntry)
             }
-            
-            // Заголовок для комментариев
+
             item {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -141,7 +124,6 @@ fun TimeEntryDetailsScreen(
                 }
             }
             
-            // Список комментариев
             if (comments.isEmpty()) {
                 item {
                     Box(
@@ -183,7 +165,6 @@ fun TimeEntryDetailsScreen(
         }
     }
     
-    // Диалог добавления комментария
     if (showAddCommentDialog) {
         AddCommentDialog(
             onDismiss = { showAddCommentDialog = false },
@@ -206,7 +187,6 @@ fun TimeEntryDetailsScreen(
         )
     }
     
-    // Диалог редактирования комментария
     if (showEditCommentDialog && commentToEdit != null) {
         EditCommentDialog(
             comment = commentToEdit!!,
@@ -222,7 +202,6 @@ fun TimeEntryDetailsScreen(
         )
     }
     
-    // Диалог просмотра медиа
     if (showMediaPreviewDialog && mediaToPreview != null) {
         MediaPreviewDialog(
             comment = mediaToPreview!!,
@@ -233,7 +212,6 @@ fun TimeEntryDetailsScreen(
         )
     }
     
-    // Диалог удаления комментария
     if (showDeleteCommentDialog && commentToDelete != null) {
         AlertDialog(
             onDismissRequest = { 
@@ -266,7 +244,6 @@ fun TimeEntryDetailsScreen(
         )
     }
     
-    // Диалог удаления периода активности
     if (showDeleteTimeEntryDialog) {
         AlertDialog(
             onDismissRequest = { showDeleteTimeEntryDialog = false },
@@ -284,10 +261,8 @@ fun TimeEntryDetailsScreen(
             confirmButton = {
                 TextButton(
                     onClick = {
-                        // Удаляем период активности
                         timeEntryViewModel.deleteTimeEntry(timeEntry)
                         showDeleteTimeEntryDialog = false
-                        // Возвращаемся назад
                         onBack()
                     },
                     colors = ButtonDefaults.textButtonColors(
@@ -344,7 +319,6 @@ fun ActivityInfoCard(activity: Activity, timeEntry: TimeEntry) {
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            // Заголовок с иконкой активности
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.fillMaxWidth()
@@ -370,9 +344,8 @@ fun ActivityInfoCard(activity: Activity, timeEntry: TimeEntry) {
                 )
             }
             
-            Divider()
+            HorizontalDivider()
             
-            // Информация о времени
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
@@ -402,9 +375,8 @@ fun ActivityInfoCard(activity: Activity, timeEntry: TimeEntry) {
                 }
             }
             
-            Divider()
+            HorizontalDivider()
             
-            // Продолжительность
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.Center
@@ -428,8 +400,6 @@ fun CommentItem(
 ) {
     val context = LocalContext.current
     val timeFormatter = DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm")
-    
-    // Преобразуем строку URI в объект Uri для медиа
     val mediaUri = comment.mediaUri?.let { android.net.Uri.parse(it) }
     
     Card(
@@ -444,7 +414,6 @@ fun CommentItem(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            // Заголовок с датой и кнопкой удаления
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -468,7 +437,6 @@ fun CommentItem(
                 }
             }
             
-            // Текст комментария
             if (comment.text.isNotEmpty()) {
                 Text(
                     text = comment.text,
@@ -480,7 +448,6 @@ fun CommentItem(
                 )
             }
             
-            // Медиафайл (если есть)
             comment.mediaType?.let { mediaType ->
                 when (mediaType) {
                     MediaType.PHOTO -> {

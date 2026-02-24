@@ -8,7 +8,6 @@ import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.os.IBinder
-import android.util.Log
 import androidx.core.app.NotificationCompat
 import com.sharai.chronotrack.MainActivity
 import com.sharai.chronotrack.R
@@ -25,6 +24,7 @@ import java.time.LocalDateTime
 import java.time.Duration
 
 class TimeTrackingService : Service() {
+
     private val serviceScope = CoroutineScope(Dispatchers.Default + Job())
     private lateinit var activityRepository: ActivityRepository
     private lateinit var timeEntryRepository: TimeEntryRepository
@@ -32,13 +32,11 @@ class TimeTrackingService : Service() {
     private var currentTimeEntry: TimeEntry? = null
 
     companion object {
-        private const val TAG = "TimeTrackingService"
         private const val NOTIFICATION_ID = 1
         private const val CHANNEL_ID = "time_tracking_channel"
         private const val CHANNEL_NAME = "Отслеживание времени"
 
         private var instance: TimeTrackingService? = null
-        
         fun getInstance(): TimeTrackingService? = instance
     }
 
@@ -49,7 +47,7 @@ class TimeTrackingService : Service() {
         activityRepository = app.activityRepository
         timeEntryRepository = app.timeEntryRepository
         createNotificationChannel()
-        startTracking()
+        restoreTrackingState()
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -62,9 +60,7 @@ class TimeTrackingService : Service() {
     private fun createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
-                CHANNEL_ID,
-                CHANNEL_NAME,
-                NotificationManager.IMPORTANCE_DEFAULT
+                CHANNEL_ID, CHANNEL_NAME, NotificationManager.IMPORTANCE_DEFAULT
             ).apply {
                 description = "Канал для отслеживания времени активностей"
                 setShowBadge(true)
@@ -82,8 +78,7 @@ class TimeTrackingService : Service() {
         .setOngoing(true)
         .setContentIntent(
             PendingIntent.getActivity(
-                this,
-                0,
+                this, 0,
                 Intent(this, MainActivity::class.java).apply {
                     flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
                 },
@@ -92,138 +87,76 @@ class TimeTrackingService : Service() {
         )
         .build()
 
-    private fun startTracking() {
+    private fun restoreTrackingState() {
         serviceScope.launch {
-            // Проверяем наличие незавершенного периода активности
             val unfinishedEntry = timeEntryRepository.getAllTimeEntries().first()
                 .find { it.endTime == null }
-            
+
             if (unfinishedEntry != null) {
                 currentTimeEntry = unfinishedEntry
                 currentActivity = activityRepository.getActivityById(unfinishedEntry.activityId)
-                
                 currentActivity?.let { activity ->
                     activityRepository.setCurrentActivity(activity.id)
-                    val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-                    notificationManager.notify(NOTIFICATION_ID, createNotification("Текущая активность: ${activity.name}"))
+                    updateNotification("Текущая активность: ${activity.name}")
                 }
             }
-
-            // Больше не подписываемся на изменения активности
-            // Вместо этого будем использовать прямой вызов handleActivityChange
         }
     }
 
-    // Метод для смены активности с указанием времени начала
-    fun changeActivity(newActivity: Activity?, startTime: LocalDateTime) {        
+    fun changeActivity(newActivity: Activity?, startTime: LocalDateTime) {
         serviceScope.launch {
+            if (newActivity == null) return@launch
+
             val currentEntry = timeEntryRepository.getCurrentTimeEntry()
-            
-            if (newActivity != null) {
-                if (currentEntry != null) {
-                    // Проверяем, совпадает ли выбранное время с временем начала текущей активности
-                    if (currentEntry.startTime.toLocalDate() == startTime.toLocalDate() &&
-                        currentEntry.startTime.hour == startTime.hour &&
-                        currentEntry.startTime.minute == startTime.minute &&
-                        currentEntry.startTime.second == startTime.second) {
-                        // Если время начала совпадает, просто обновляем активность
-                        timeEntryRepository.updateTimeEntry(currentEntry.copy(
-                            activityId = newActivity.id
-                        ))
-                    } else {
-                        // Если время начала отличается, завершаем текущую и начинаем новую
-                        timeEntryRepository.updateTimeEntry(currentEntry.copy(
+
+            if (currentEntry != null) {
+                val sameStartTime = currentEntry.startTime.toLocalDate() == startTime.toLocalDate() &&
+                    currentEntry.startTime.hour == startTime.hour &&
+                    currentEntry.startTime.minute == startTime.minute &&
+                    currentEntry.startTime.second == startTime.second
+
+                if (sameStartTime) {
+                    // Same start time — just reassign the activity (correcting a misclick)
+                    timeEntryRepository.updateTimeEntry(currentEntry.copy(activityId = newActivity.id))
+                } else {
+                    timeEntryRepository.updateTimeEntry(
+                        currentEntry.copy(
                             endTime = startTime,
                             duration = Duration.between(currentEntry.startTime, startTime)
-                        ))
-                        
-                        // Создаем новую запись с выбранным временем начала
-                        val timeEntry = TimeEntry(
-                            activityId = newActivity.id,
-                            startTime = startTime
                         )
-                        val id = timeEntryRepository.insertTimeEntry(timeEntry)
-                        currentTimeEntry = timeEntry.copy(id = id)
-                    }
-                } else {
-                    // Если нет текущей записи, просто создаем новую
-                    val timeEntry = TimeEntry(
-                        activityId = newActivity.id,
-                        startTime = startTime
                     )
+                    val timeEntry = TimeEntry(activityId = newActivity.id, startTime = startTime)
                     val id = timeEntryRepository.insertTimeEntry(timeEntry)
                     currentTimeEntry = timeEntry.copy(id = id)
                 }
-                
-                // Обновляем текущую активность
-                currentActivity = newActivity
-                
-                // Обновляем уведомление
-                val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-                notificationManager.notify(NOTIFICATION_ID, createNotification("Текущая активность: ${newActivity.name}"))
-            }
-        }
-    }
-
-    private suspend fun handleActivityChange(newActivity: Activity?) {
-        val now = LocalDateTime.now()
-        
-        // Завершаем текущую запись времени
-        currentTimeEntry?.let { entry ->            
-            val endTime = now
-            val duration = Duration.between(entry.startTime, endTime)
-            timeEntryRepository.updateTimeEntry(entry.copy(
-                endTime = endTime,
-                duration = duration
-            ))
-            currentTimeEntry = null
-        }
-
-        // Создаем новую запись времени для новой активности
-        newActivity?.let { activity ->
-            // Проверяем, нет ли уже незавершенного периода для этой активности
-            val existingEntry = timeEntryRepository.getAllTimeEntries().first()
-                .find { it.endTime == null }
-
-            if (existingEntry != null) {
-                currentTimeEntry = existingEntry
             } else {
-                val timeEntry = TimeEntry(
-                    activityId = activity.id,
-                    startTime = now
-                )
+                val timeEntry = TimeEntry(activityId = newActivity.id, startTime = startTime)
                 val id = timeEntryRepository.insertTimeEntry(timeEntry)
                 currentTimeEntry = timeEntry.copy(id = id)
             }
 
-            // Обновляем уведомление
-            val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-            notificationManager.notify(NOTIFICATION_ID, createNotification("Текущая активность: ${activity.name}"))
+            currentActivity = newActivity
+            updateNotification("Текущая активность: ${newActivity.name}")
         }
-
-        currentActivity = newActivity
     }
 
-    private fun formatDuration(duration: Duration): String {
-        val hours = duration.toHours()
-        val minutes = duration.toMinutesPart()
-        return buildString {
-            if (hours > 0) {
-                append(hours)
-                append(" ч ")
-            }
-            if (minutes > 0 || hours == 0L) {
-                append(minutes)
-                append(" мин")
-            }
-        }
+    private fun updateNotification(text: String) {
+        val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        notificationManager.notify(NOTIFICATION_ID, createNotification(text))
     }
 
     override fun onDestroy() {
         super.onDestroy()
         instance = null
         serviceScope.launch {
-            handleActivityChange(null)
+            currentTimeEntry?.let { entry ->
+                val now = LocalDateTime.now()
+                timeEntryRepository.updateTimeEntry(
+                    entry.copy(endTime = now, duration = Duration.between(entry.startTime, now))
+                )
+                currentTimeEntry = null
+            }
+            currentActivity = null
         }
     }
-} 
+}

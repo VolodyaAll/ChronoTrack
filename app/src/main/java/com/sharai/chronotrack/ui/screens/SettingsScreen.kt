@@ -5,6 +5,7 @@ import android.content.Intent
 import android.os.Handler
 import android.os.Looper
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -14,8 +15,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Divider
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
@@ -44,70 +45,47 @@ import com.sharai.chronotrack.R
 import com.sharai.chronotrack.data.preferences.AppPreferences
 import com.sharai.chronotrack.viewmodel.SettingsViewModel
 import kotlinx.coroutines.launch
-import android.util.Log
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen() {
     val context = LocalContext.current
     val app = context.applicationContext as ChronoTrackApp
-    
-    // Инициализируем ViewModel
     val settingsViewModel: SettingsViewModel = viewModel(
         factory = SettingsViewModel.Factory(app.appPreferences)
     )
-    
-    // Получаем текущий язык
     val currentLanguage by settingsViewModel.currentLanguage.collectAsState()
-    
-    // Состояние для Snackbar
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
-    
-    // Состояние для отслеживания изменения языка
+
     var selectedLanguage by remember { mutableStateOf(currentLanguage) }
     var shouldRestartApp by remember { mutableStateOf(false) }
-    
-    // Эффект для перезапуска приложения при изменении языка
+
     DisposableEffect(shouldRestartApp) {
         if (shouldRestartApp) {
-            Log.d("SettingsScreen", "Подготовка к перезапуску приложения")
-            // Используем Handler для небольшой задержки перед перезапуском
             Handler(Looper.getMainLooper()).postDelayed({
                 try {
-                    Log.d("SettingsScreen", "Перезапуск приложения")
-                    
-                    // Создаем интент для перезапуска MainActivity
                     val intent = Intent(context, MainActivity::class.java).apply {
-                        // Очищаем весь стек активностей
                         addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
                         addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                         addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK)
                     }
-                    
-                    // Запускаем новую активность
                     context.startActivity(intent)
-                    
-                    // Завершаем текущую активность
                     if (context is Activity) {
                         context.finish()
-                        
-                        // Добавляем анимацию перехода
+                        @Suppress("DEPRECATION")
                         context.overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
                     }
-                } catch (e: Exception) {
-                    Log.e("SettingsScreen", "Ошибка при перезапуске: ${e.message}", e)
+                } catch (_: Exception) {
                 }
-            }, 500) // Задержка в 500 мс
+            }, 500)
         }
         onDispose { }
     }
-    
+
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text(stringResource(R.string.settings)) }
-            )
+            TopAppBar(title = { Text(stringResource(R.string.settings)) })
         },
         snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { paddingValues ->
@@ -117,35 +95,20 @@ fun SettingsScreen() {
                 .padding(paddingValues)
                 .padding(16.dp)
         ) {
-            // Секция выбора языка
             LanguageSettings(
                 currentLanguage = selectedLanguage,
                 onLanguageSelected = { languageCode ->
-                    // Если выбран новый язык, отличный от текущего
                     if (languageCode != selectedLanguage) {
-                        Log.d("SettingsScreen", "Выбран новый язык: $languageCode")
-                        
-                        // Устанавливаем новый язык
                         scope.launch {
                             try {
-                                // Сохраняем выбранный язык
                                 settingsViewModel.setLanguage(languageCode)
-                                
-                                // Обновляем локальное состояние
                                 selectedLanguage = languageCode
-                                
-                                // Показываем сообщение о перезапуске
                                 snackbarHostState.showSnackbar(
                                     message = context.getString(R.string.language_change_restart)
                                 )
-                                
-                                // Обновляем локаль в приложении
                                 app.updateLocale(languageCode)
-                                
-                                // Устанавливаем флаг для перезапуска приложения
                                 shouldRestartApp = true
-                            } catch (e: Exception) {
-                                Log.e("SettingsScreen", "Ошибка при смене языка: ${e.message}", e)
+                            } catch (_: Exception) {
                                 snackbarHostState.showSnackbar(
                                     message = context.getString(R.string.language_change_error)
                                 )
@@ -159,7 +122,7 @@ fun SettingsScreen() {
 }
 
 @Composable
-fun LanguageSettings(
+private fun LanguageSettings(
     currentLanguage: String,
     onLanguageSelected: (String) -> Unit
 ) {
@@ -172,55 +135,37 @@ fun LanguageSettings(
                 .fillMaxWidth()
                 .padding(16.dp)
         ) {
-            // Заголовок секции
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalAlignment = Alignment.Start
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Language,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary
-                )
-                
-                Spacer(modifier = Modifier.height(8.dp))
-                
-                Text(
-                    text = stringResource(R.string.language_settings),
-                    style = MaterialTheme.typography.titleMedium
-                )
-                
-                Spacer(modifier = Modifier.height(4.dp))
-                
-                Text(
-                    text = stringResource(R.string.select_language),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-            
+            Icon(
+                imageVector = Icons.Default.Language,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = stringResource(R.string.language_settings),
+                style = MaterialTheme.typography.titleMedium
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = stringResource(R.string.select_language),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+
             Spacer(modifier = Modifier.height(16.dp))
-            Divider()
-            
-            // Опция "Системный язык"
+            HorizontalDivider()
+
             LanguageOption(
-                languageCode = AppPreferences.SYSTEM_LANGUAGE,
                 displayName = stringResource(R.string.system_language),
                 isSelected = currentLanguage == AppPreferences.SYSTEM_LANGUAGE,
                 onSelected = { onLanguageSelected(AppPreferences.SYSTEM_LANGUAGE) }
             )
-            
-            // Опция "Английский"
             LanguageOption(
-                languageCode = "en",
                 displayName = stringResource(R.string.english),
                 isSelected = currentLanguage == "en",
                 onSelected = { onLanguageSelected("en") }
             )
-            
-            // Опция "Русский"
             LanguageOption(
-                languageCode = "ru",
                 displayName = stringResource(R.string.russian),
                 isSelected = currentLanguage == "ru",
                 onSelected = { onLanguageSelected("ru") }
@@ -230,27 +175,22 @@ fun LanguageSettings(
 }
 
 @Composable
-fun LanguageOption(
-    languageCode: String,
+private fun LanguageOption(
     displayName: String,
     isSelected: Boolean,
     onSelected: () -> Unit
 ) {
-    androidx.compose.foundation.layout.Row(
+    Row(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        RadioButton(
-            selected = isSelected,
-            onClick = onSelected
-        )
-        
+        RadioButton(selected = isSelected, onClick = onSelected)
         Text(
             text = displayName,
             style = MaterialTheme.typography.bodyLarge,
             modifier = Modifier.padding(start = 8.dp)
         )
     }
-} 
+}

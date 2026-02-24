@@ -1,15 +1,73 @@
-*.iml
-.gradle
-/local.properties
-/.idea/caches
-/.idea/libraries
-/.idea/modules.xml
+# Built application files
+*.apk
+*.aar
+*.ap_
+*.aab
+
+# Files for the ART/Dalvik VM
+*.dex
+
+# Java class files
+*.class
+
+# Generated files
+bin/
+gen/
+out/
+
+# Gradle
+.gradle/
+build/
+**/build/
+
+# Local configuration
+local.properties
+
+# Android Studio
 /.idea/workspace.xml
+/.idea/libraries/
+/.idea/caches/
+/.idea/modules.xml
 /.idea/navEditor.xml
 /.idea/assetWizardSettings.xml
+/.idea/deploymentTargetSelector.xml
+/.idea/deviceManager.xml
+/.idea/markdown.xml
+/.idea/AndroidProjectSystem.xml
+/.idea/appInsightsSettings.xml
+/.idea/shelf/
+
+# Keystore files (keep safe, don't commit)
+*.jks
+*.keystore
+
+# Log files
+*.log
+
+# OS generated files
 .DS_Store
-/build
-/captures
-.externalNativeBuild
-.cxx
-local.properties
+.DS_Store?
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Kotlin
+.kotlin/
+
+# Captures (Android profiler)
+/captures/
+
+# External native build
+.externalNativeBuild/
+.cxx/
+
+# Google Services (contains API keys)
+google-services.json
+
+# Signing config
+signing.properties
+
+# IntelliJ IDEA
+*.iml
+*.iws
+*.ipr
