@@ -51,6 +51,13 @@ class AppPreferences(private val context: Context) {
             .getString(LANGUAGE_PREF_KEY, SYSTEM_LANGUAGE) ?: SYSTEM_LANGUAGE
     }
 
+    fun setLanguageSync(languageCode: String) {
+        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            .edit()
+            .putString(LANGUAGE_PREF_KEY, languageCode)
+            .commit()
+    }
+
     fun getLocale(languageCode: String): Locale = when (languageCode) {
         "ru" -> Locale("ru")
         "en" -> Locale("en")

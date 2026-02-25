@@ -2,8 +2,6 @@ package com.sharai.chronotrack.ui.screens
 
 import android.app.Activity
 import android.content.Intent
-import android.os.Handler
-import android.os.Looper
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -21,18 +19,12 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -55,39 +47,12 @@ fun SettingsScreen() {
         factory = SettingsViewModel.Factory(app.appPreferences)
     )
     val currentLanguage by settingsViewModel.currentLanguage.collectAsState()
-    val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
-
-    var selectedLanguage by remember { mutableStateOf(currentLanguage) }
-    var shouldRestartApp by remember { mutableStateOf(false) }
-
-    DisposableEffect(shouldRestartApp) {
-        if (shouldRestartApp) {
-            Handler(Looper.getMainLooper()).postDelayed({
-                try {
-                    val intent = Intent(context, MainActivity::class.java).apply {
-                        addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
-                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                        addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK)
-                    }
-                    context.startActivity(intent)
-                    if (context is Activity) {
-                        context.finish()
-                        @Suppress("DEPRECATION")
-                        context.overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
-                    }
-                } catch (_: Exception) {
-                }
-            }, 500)
-        }
-        onDispose { }
-    }
 
     Scaffold(
         topBar = {
             TopAppBar(title = { Text(stringResource(R.string.settings)) })
-        },
-        snackbarHost = { SnackbarHost(snackbarHostState) }
+        }
     ) { paddingValues ->
         Column(
             modifier = Modifier
@@ -96,23 +61,19 @@ fun SettingsScreen() {
                 .padding(16.dp)
         ) {
             LanguageSettings(
-                currentLanguage = selectedLanguage,
+                currentLanguage = currentLanguage,
                 onLanguageSelected = { languageCode ->
-                    if (languageCode != selectedLanguage) {
+                    if (languageCode != currentLanguage) {
+                        app.appPreferences.setLanguageSync(languageCode)
                         scope.launch {
-                            try {
-                                settingsViewModel.setLanguage(languageCode)
-                                selectedLanguage = languageCode
-                                snackbarHostState.showSnackbar(
-                                    message = context.getString(R.string.language_change_restart)
-                                )
-                                app.updateLocale(languageCode)
-                                shouldRestartApp = true
-                            } catch (_: Exception) {
-                                snackbarHostState.showSnackbar(
-                                    message = context.getString(R.string.language_change_error)
-                                )
-                            }
+                            settingsViewModel.setLanguage(languageCode)
+                        }
+                        val intent = Intent(context, MainActivity::class.java).apply {
+                            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+                        }
+                        context.startActivity(intent)
+                        if (context is Activity) {
+                            context.finish()
                         }
                     }
                 }

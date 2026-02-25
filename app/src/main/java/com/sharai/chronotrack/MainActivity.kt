@@ -1,16 +1,17 @@
 package com.sharai.chronotrack
 
 import android.Manifest
+import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.content.res.Configuration
 import android.os.Build
 import android.os.Bundle
-import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
-import androidx.lifecycle.lifecycleScope
+import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Comment
@@ -37,6 +38,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.sharai.chronotrack.data.model.Activity
+import com.sharai.chronotrack.data.preferences.AppPreferences
 import com.sharai.chronotrack.service.TimeTrackingService
 import com.sharai.chronotrack.ui.navigation.Screen
 import com.sharai.chronotrack.ui.screens.ActivitiesScreen
@@ -52,9 +54,9 @@ import com.sharai.chronotrack.viewmodel.SettingsViewModel
 import com.sharai.chronotrack.viewmodel.StatisticsViewModel
 import com.sharai.chronotrack.viewmodel.TimeEntryViewModel
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.flow.first
+import java.util.Locale
 
-class MainActivity : ComponentActivity() {
+class MainActivity : AppCompatActivity() {
 
     private val activityViewModel: ActivityViewModel by viewModels {
         ActivityViewModel.Factory(
@@ -96,24 +98,26 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    override fun attachBaseContext(newBase: Context) {
+        val prefs = newBase.getSharedPreferences(AppPreferences.PREFS_NAME, Context.MODE_PRIVATE)
+        val languageCode = prefs.getString(AppPreferences.LANGUAGE_PREF_KEY, AppPreferences.SYSTEM_LANGUAGE)
+            ?: AppPreferences.SYSTEM_LANGUAGE
+
+        if (languageCode == AppPreferences.SYSTEM_LANGUAGE) {
+            super.attachBaseContext(newBase)
+            return
+        }
+
+        val locale = Locale(languageCode)
+        Locale.setDefault(locale)
+        val config = Configuration(newBase.resources.configuration)
+        config.setLocale(locale)
+        super.attachBaseContext(newBase.createConfigurationContext(config))
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-
-        val app = application as ChronoTrackApp
-        val currentLanguage = app.appPreferences.getLanguageSync()
-        app.updateLocale(currentLanguage)
-
-        lifecycleScope.launch {
-            try {
-                val languageCode = app.appPreferences.language.first()
-                if (languageCode != currentLanguage) {
-                    app.updateLocale(languageCode)
-                }
-            } catch (_: Exception) {
-            }
-        }
-
         checkNotificationPermissionAndStartService()
 
         setContent {
