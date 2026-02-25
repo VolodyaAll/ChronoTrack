@@ -9,15 +9,11 @@
         android:fillColor="#FFFFFF"
         android:pathData="M50,37L50,31A2,2,0,0,1,52,29L56,29A2,2,0,0,1,58,31L58,37z" />
 
-    <!-- Watch body -->
+    <!-- Watch body ring (evenOdd creates a donut shape) -->
     <path
         android:fillColor="#FFFFFF"
-        android:pathData="M54,58m-23,0a23,23,0,1,1,46,0a23,23,0,1,1,-46,0" />
-
-    <!-- Watch face -->
-    <path
-        android:fillColor="#4A3880"
-        android:pathData="M54,58m-18,0a18,18,0,1,1,36,0a18,18,0,1,1,-36,0" />
+        android:fillType="evenOdd"
+        android:pathData="M54,58m-23,0a23,23,0,1,1,46,0a23,23,0,1,1,-46,0 M54,58m-18,0a18,18,0,1,1,36,0a18,18,0,1,1,-36,0" />
 
     <!-- Tick mark: 12 o'clock -->
     <path
@@ -60,13 +56,6 @@
         android:strokeWidth="3"
         android:strokeLineCap="round"
         android:pathData="M54,58L64,53" />
-
-    <!-- Second hand (accent coral) pointing to ~8 -->
-    <path
-        android:strokeColor="#FF6B6B"
-        android:strokeWidth="1.5"
-        android:strokeLineCap="round"
-        android:pathData="M54,58L42,65" />
 
     <!-- Center dot -->
     <path
